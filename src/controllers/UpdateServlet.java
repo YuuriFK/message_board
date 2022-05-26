@@ -2,8 +2,10 @@ package controllers;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -12,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import models.Message;
 import utils.DBUtil;
+import validators.MessageValidator;
 
 @WebServlet("/update")
 public class UpdateServlet extends HttpServlet {
@@ -44,6 +47,19 @@ public class UpdateServlet extends HttpServlet {
             Timestamp currentTime = new Timestamp(System.currentTimeMillis());
             m.setUpdated_at(currentTime);
 
+            //バリデーションを実行してエラーがあったら編集画面のフォームへ戻る
+            List<String> errors = MessageValidator.validate(m);
+            if(errors.size()>0) {
+                em.close();
+
+                //フォームに初期値を設定、さらにエラーメッセージを送る
+                request.setAttribute("_token", request.getSession().getId());
+                request.setAttribute("message", m);
+                request.setAttribute("errors", errors);
+
+                RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/messages/edit.jsp");
+                rd.forward(request, response);
+            }   else    {
             //データベース更新
             em.getTransaction().begin();
             em.getTransaction().commit();
@@ -58,5 +74,5 @@ public class UpdateServlet extends HttpServlet {
 
         }
     }
-
+    }
 }
